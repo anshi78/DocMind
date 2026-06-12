@@ -23,4 +23,3 @@ tiktoken==0.8.0
 python-slugify==8.0.4
 structlog==24.4.0
 sentry-sdk[fastapi]==2.16.0
--e .
