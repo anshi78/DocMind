@@ -7,7 +7,6 @@ services:
     name: documind-backend
     env: docker
     dockerfilePath: Dockerfile.backend
-    context: .
     plan: free
     envVars:
       - key: ENVIRONMENT
@@ -41,7 +40,6 @@ services:
     name: documind-worker
     env: docker
     dockerfilePath: Dockerfile.worker
-    context: .
     plan: free
     envVars:
       - key: ENVIRONMENT
