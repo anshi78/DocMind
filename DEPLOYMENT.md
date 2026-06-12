@@ -90,3 +90,15 @@ If a migration hangs or gets locked due to another active database session holdi
     ```sql
     SELECT pg_terminate_backend(pid);
     ```
+
+### 3. Build Failure: Rust/Cargo Read-Only Filesystem or Compilation Error (`pydantic-core`)
+If your Render build fails with an error related to `pydantic-core` metadata generation, or Cargo failing to write to a read-only registry under `/usr/local/cargo/...`:
+
+*   **The Cause**: Render is trying to build using a Python version (e.g., `3.14`) that does not have prebuilt binary wheels on PyPI for packages like `pydantic-core`, `cryptography`, `bcrypt`, or `tiktoken`. Because there are no prebuilt wheels, `pip` falls back to compiling them from source, which invokes `cargo`. The Cargo compiler then fails because Render's default global Cargo cache directory is read-only.
+*   **The Fix**:
+    *   **Option A (Recommended: Use Docker)**: Ensure your Render services are deployed using the **Docker** environment and pointing to `Dockerfile.backend` and `Dockerfile.worker` as specified in `render.yaml`. Docker container builds isolate dependencies and compile correctly under Python `3.12-slim`.
+    *   **Option B (Native Python Environment)**: If you must deploy as a native Python service, configure Render to use a stable Python version that has prebuilt wheels (avoiding compilation entirely):
+        1. A `.python-version` file containing `3.12.3` has been created at the root of the repository and in the `backend/` directory to automatically guide Render's Python builder.
+        2. Set the `PYTHON_VERSION` environment variable to `3.12.3` in the Render dashboard for your Web Service and Worker.
+        3. If any packages still need to compile from source, add the `CARGO_HOME` environment variable and set it to `/tmp/cargo` (which is writeable on Render) in your Render dashboard environment settings.
+
