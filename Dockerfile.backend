@@ -1,0 +1,33 @@
+# Dockerfile.backend
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy packaging configuration and README
+COPY backend/pyproject.toml backend/README.md /app/
+RUN pip install --no-cache-dir --user .
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed dependencies and code
+COPY --from=builder /root/.local /root/.local
+COPY backend/app /app/app
+COPY backend/alembic.ini /app/alembic.ini
+
+ENV PATH=/root/.local/bin:$PATH
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
