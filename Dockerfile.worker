@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy packaging configuration and README
 COPY backend/pyproject.toml backend/README.md /app/
+RUN mkdir app && touch app/__init__.py
 RUN pip install --no-cache-dir --user .
 
 FROM python:3.12-slim
