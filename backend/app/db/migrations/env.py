@@ -18,6 +18,7 @@ config.set_main_option("sqlalchemy.url", settings.db_url)
 
 
 def run_migrations_offline() -> None:
+    import sys
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -28,6 +29,7 @@ def run_migrations_offline() -> None:
     )
     with context.begin_transaction():
         context.run_migrations()
+    sys.exit(0)
 
 
 def do_run_migrations(connection: Connection) -> None:
@@ -64,7 +66,9 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
+    import sys
     asyncio.run(run_async_migrations())
+    sys.exit(0)
 
 
 if context.is_offline_mode():
