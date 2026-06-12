@@ -1,6 +1,6 @@
 # DocuMind Deployment Guide
 
-This guide explains how to deploy the entire DocuMind stack (FastAPI backend, ARQ worker, Next.js frontend, PostgreSQL, and Redis) using **Render** (Recommended) or **Railway** and **Vercel**.
+This guide explains how to deploy the entire DocuMind stack (FastAPI backend, ARQ worker, Next.js frontend, PostgreSQL, and Redis) using **Render** and **Vercel**.
 
 ---
 
@@ -43,41 +43,22 @@ Render is the simplest way to deploy the entire stack from a single GitHub repos
 
 ---
 
-## 🚂 Option 2: Deployment on Railway
+## 💻 Part 2: Frontend on Vercel (Optional)
 
-If you prefer to deploy using Railway:
-
-### Part 1: Database Provisioning
-1.  Log in to [Railway](https://railway.app/).
-2.  Click **New Project** → **Provision PostgreSQL**.
-3.  Click **New** → **Database** → **Provision Redis**.
-
-### Part 2: Deploying Services
-Using the custom configurations in the `railway/` directory:
-1.  **Backend**: Set **Dockerfile Path** to `Dockerfile.backend` and **Config Path** to `railway/backend.toml`. Expose static domain.
-2.  **Worker**: Set **Dockerfile Path** to `Dockerfile.worker` and **Config Path** to `railway/worker.toml`.
-3.  **Frontend**: Set **Dockerfile Path** to `Dockerfile.frontend` and **Config Path** to `railway/frontend.toml`.
-
-Add database references (`PGHOST`, `PGPORT`, etc.) and credentials under **Variables** for both backend and worker services.
-
----
-
-## 💻 Part 3: Frontend on Vercel (Optional)
-
-You can choose to host the Next.js frontend on Vercel instead of Render/Railway (it's faster and has a generous free tier for Next.js):
+You can choose to host the Next.js frontend on Vercel instead of Render (it's faster and has a generous free tier for Next.js):
 
 1.  Log in to [Vercel](https://vercel.com/).
 2.  Click **Add New** → **Project** and import your `DocMind` repository.
 3.  Set the **Framework Preset** to **Next.js**.
 4.  Set the **Root Directory** to `frontend`.
 5.  Add the environment variable:
-    *   `NEXT_PUBLIC_API_URL`: *[Your Render/Railway Backend Domain]* (e.g. `https://documind-backend.onrender.com`)
+    *   `NEXT_PUBLIC_API_URL`: *[Your Render Backend Domain]* (e.g. `https://documind-backend.onrender.com`)
 6.  Click **Deploy**.
 7.  *Update the `CORS_ORIGINS` environment variable in your backend settings to include your Vercel URL.*
 
 ---
 
-## 🗄️ Part 4: Troubleshooting Database Migrations
+## 🗄️ Part 3: Troubleshooting Database Migrations
 
 During migration or database setup, you might encounter pgvector index errors. Here is how to handle them.
 
