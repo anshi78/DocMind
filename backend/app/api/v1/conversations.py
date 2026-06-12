@@ -354,6 +354,11 @@ async def stream_chat_response(
                     )
                     write_db.add(citation)
             # Record usage event for cost tracking
+            # Gemini free tier = $0, OpenAI GPT-4o-mini: $0.15/M input, $0.60/M output
+            if settings.DEFAULT_LLM_PROVIDER == "gemini":
+                cost_micro = 0
+            else:
+                cost_micro = int((tokens_in * 0.15 + tokens_out * 0.6) / 1000 * 1_000_000)
             usage_event = UsageEvent(
                 org_id=org.id,
                 user_id=current_user.id,
@@ -361,7 +366,7 @@ async def stream_chat_response(
                 model=settings.DEFAULT_LLM_PROVIDER,
                 tokens_input=tokens_in,
                 tokens_output=tokens_out,
-                cost_microdollars=int((tokens_in * 0.15 + tokens_out * 0.6) / 1000 * 1_000_000),  # GPT-4o-mini pricing
+                cost_microdollars=cost_micro,
                 ref_id=db_msg.id,
                 ref_type="message",
             )

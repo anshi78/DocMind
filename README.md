@@ -218,7 +218,31 @@ SENTRY_DSN=          # https://sentry.io
 
 > **Full `.env.example`** with all variables and descriptions is in the repository root.
 
+### 🗄️ Railway Database Environment Variables
+
+When you provision a PostgreSQL instance on Railway, the platform automatically generates and injects the following environment variables. The FastAPI backend is configured to automatically detect and use these for connection pooling:
+
+| Variable | Example Value / Description |
+|---|---|
+| `DATABASE_URL` | `postgresql://postgres:<password>@postgres.railway.internal:5432/railway` |
+| `PGDATA` | `/var/lib/postgresql/data/pgdata` |
+| `PGDATABASE` | `railway` |
+| `PGHOST` | `postgres.railway.internal` |
+| `PGPASSWORD` | `<your-db-password>` |
+| `PGPORT` | `5432` |
+| `PGUSER` | `postgres` |
+| `POSTGRES_DB` | `railway` |
+| `POSTGRES_PASSWORD` | `<your-db-password>` |
+| `POSTGRES_USER` | `postgres` |
+| `RAILWAY_ENVIRONMENT` | `production` |
+| `RAILWAY_PRIVATE_DOMAIN` | `postgres.railway.internal` |
+| `RAILWAY_PROJECT_NAME` | `DocMind` |
+| `RAILWAY_SERVICE_NAME` | `Postgres` |
+
+*Note: In your Railway `backend` and `worker` service settings, you can bind these variables directly by referencing the PostgreSQL database service.*
+
 ---
+
 
 ## Demo Mode & Cost Control
 
@@ -401,8 +425,8 @@ railway login
 
 # Create project with managed Postgres + Redis
 railway init --name documind-production
-railway add --plugin postgresql
-railway add --plugin redis
+railway add --database postgres
+railway add --database redis
 
 # Set secrets
 railway variables set \

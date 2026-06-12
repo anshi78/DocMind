@@ -28,9 +28,14 @@ class EmbeddingService:
             logger.warning("Gemini embedding provider selected but GEMINI_API_KEY is not set. Falling back to OpenAI.")
             self.provider = "openai"
         
+        # Graceful fallback: if openai selected but no API key, use gemini
+        if self.provider == "openai" and not settings.OPENAI_API_KEY:
+            logger.warning("OpenAI embedding provider selected but OPENAI_API_KEY is not set. Falling back to Gemini.")
+            self.provider = "gemini"
+        
         # Initialize OpenAI Client
         self.openai_client = None
-        if self.provider == "openai" or settings.OPENAI_API_KEY:
+        if settings.OPENAI_API_KEY:
             self.openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
             
         # Initialize Gemini Client

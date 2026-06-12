@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     API_KEY_PREFIX: str = "dm_live_"
 
     # AI
-    OPENAI_API_KEY: str
+    OPENAI_API_KEY: str | None = None
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_EMBEDDING_DIMENSIONS: int = 1536
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
@@ -69,8 +69,8 @@ class Settings(BaseSettings):
     GEMINI_EMBEDDING_MODEL: str = "models/text-embedding-004"
     GEMINI_EMBEDDING_DIMENSIONS: int = 768
     GEMINI_CHAT_MODEL: str = "gemini-1.5-flash"
-    DEFAULT_EMBEDDING_PROVIDER: Literal["openai", "gemini"] = "openai"
-    DEFAULT_LLM_PROVIDER: Literal["openai", "gemini"] = "openai"
+    DEFAULT_EMBEDDING_PROVIDER: Literal["openai", "gemini"] = "gemini"
+    DEFAULT_LLM_PROVIDER: Literal["openai", "gemini"] = "gemini"
 
     @model_validator(mode="after")
     def validate_provider_keys(self) -> "Settings":
@@ -90,6 +90,20 @@ class Settings(BaseSettings):
                 stacklevel=2,
             )
             object.__setattr__(self, "DEFAULT_LLM_PROVIDER", "openai")
+        if self.DEFAULT_EMBEDDING_PROVIDER == "openai" and not self.OPENAI_API_KEY:
+            warnings.warn(
+                "DEFAULT_EMBEDDING_PROVIDER is 'openai' but OPENAI_API_KEY is not set. "
+                "Falling back to 'gemini'.",
+                stacklevel=2,
+            )
+            object.__setattr__(self, "DEFAULT_EMBEDDING_PROVIDER", "gemini")
+        if self.DEFAULT_LLM_PROVIDER == "openai" and not self.OPENAI_API_KEY:
+            warnings.warn(
+                "DEFAULT_LLM_PROVIDER is 'openai' but OPENAI_API_KEY is not set. "
+                "Falling back to 'gemini'.",
+                stacklevel=2,
+            )
+            object.__setattr__(self, "DEFAULT_LLM_PROVIDER", "gemini")
         return self
 
     # RAG
