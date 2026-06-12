@@ -1,6 +1,6 @@
 from functools import lru_cache
 from typing import Literal
-from pydantic import AnyHttpUrl, EmailStr, computed_field, model_validator
+from pydantic import AnyHttpUrl, EmailStr, computed_field, model_validator, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "staging", "production"] = "development"
     DEBUG: bool = False
     SECRET_KEY: str
-    ALLOWED_HOSTS: list[str] = ["*"]
+    ALLOWED_HOSTS: str | list[str] = ["*"]
 
     @computed_field
     @property
@@ -37,8 +37,11 @@ class Settings(BaseSettings):
     @property
     def db_url(self) -> str:
         if self.DATABASE_URL:
-            return self.DATABASE_URL.replace(
-                "postgresql://", "postgresql+asyncpg://"
+            url = self.DATABASE_URL
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql://", 1)
+            return url.replace(
+                "postgresql://", "postgresql+asyncpg://", 1
             )
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
@@ -76,34 +79,61 @@ class Settings(BaseSettings):
     def validate_provider_keys(self) -> "Settings":
         """Ensure required API keys are present for the selected AI providers."""
         import warnings
+        # Validate Embedding Provider fallback
         if self.DEFAULT_EMBEDDING_PROVIDER == "gemini" and not self.GEMINI_API_KEY:
-            warnings.warn(
-                "DEFAULT_EMBEDDING_PROVIDER is 'gemini' but GEMINI_API_KEY is not set. "
-                "Falling back to 'openai'.",
-                stacklevel=2,
-            )
-            object.__setattr__(self, "DEFAULT_EMBEDDING_PROVIDER", "openai")
+            if self.OPENAI_API_KEY:
+                warnings.warn(
+                    "DEFAULT_EMBEDDING_PROVIDER is 'gemini' but GEMINI_API_KEY is not set. "
+                    "Falling back to 'openai'.",
+                    stacklevel=2,
+                )
+                object.__setattr__(self, "DEFAULT_EMBEDDING_PROVIDER", "openai")
+            else:
+                warnings.warn(
+                    "DEFAULT_EMBEDDING_PROVIDER is 'gemini' but neither GEMINI_API_KEY nor OPENAI_API_KEY is set.",
+                    stacklevel=2,
+                )
+        elif self.DEFAULT_EMBEDDING_PROVIDER == "openai" and not self.OPENAI_API_KEY:
+            if self.GEMINI_API_KEY:
+                warnings.warn(
+                    "DEFAULT_EMBEDDING_PROVIDER is 'openai' but OPENAI_API_KEY is not set. "
+                    "Falling back to 'gemini'.",
+                    stacklevel=2,
+                )
+                object.__setattr__(self, "DEFAULT_EMBEDDING_PROVIDER", "gemini")
+            else:
+                warnings.warn(
+                    "DEFAULT_EMBEDDING_PROVIDER is 'openai' but neither OPENAI_API_KEY nor GEMINI_API_KEY is set.",
+                    stacklevel=2,
+                )
+
+        # Validate LLM Provider fallback
         if self.DEFAULT_LLM_PROVIDER == "gemini" and not self.GEMINI_API_KEY:
-            warnings.warn(
-                "DEFAULT_LLM_PROVIDER is 'gemini' but GEMINI_API_KEY is not set. "
-                "Falling back to 'openai'.",
-                stacklevel=2,
-            )
-            object.__setattr__(self, "DEFAULT_LLM_PROVIDER", "openai")
-        if self.DEFAULT_EMBEDDING_PROVIDER == "openai" and not self.OPENAI_API_KEY:
-            warnings.warn(
-                "DEFAULT_EMBEDDING_PROVIDER is 'openai' but OPENAI_API_KEY is not set. "
-                "Falling back to 'gemini'.",
-                stacklevel=2,
-            )
-            object.__setattr__(self, "DEFAULT_EMBEDDING_PROVIDER", "gemini")
-        if self.DEFAULT_LLM_PROVIDER == "openai" and not self.OPENAI_API_KEY:
-            warnings.warn(
-                "DEFAULT_LLM_PROVIDER is 'openai' but OPENAI_API_KEY is not set. "
-                "Falling back to 'gemini'.",
-                stacklevel=2,
-            )
-            object.__setattr__(self, "DEFAULT_LLM_PROVIDER", "gemini")
+            if self.OPENAI_API_KEY:
+                warnings.warn(
+                    "DEFAULT_LLM_PROVIDER is 'gemini' but GEMINI_API_KEY is not set. "
+                    "Falling back to 'openai'.",
+                    stacklevel=2,
+                )
+                object.__setattr__(self, "DEFAULT_LLM_PROVIDER", "openai")
+            else:
+                warnings.warn(
+                    "DEFAULT_LLM_PROVIDER is 'gemini' but neither GEMINI_API_KEY nor OPENAI_API_KEY is set.",
+                    stacklevel=2,
+                )
+        elif self.DEFAULT_LLM_PROVIDER == "openai" and not self.OPENAI_API_KEY:
+            if self.GEMINI_API_KEY:
+                warnings.warn(
+                    "DEFAULT_LLM_PROVIDER is 'openai' but OPENAI_API_KEY is not set. "
+                    "Falling back to 'gemini'.",
+                    stacklevel=2,
+                )
+                object.__setattr__(self, "DEFAULT_LLM_PROVIDER", "gemini")
+            else:
+                warnings.warn(
+                    "DEFAULT_LLM_PROVIDER is 'openai' but neither OPENAI_API_KEY nor GEMINI_API_KEY is set.",
+                    stacklevel=2,
+                )
         return self
 
     # RAG
@@ -148,7 +178,21 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: str | list[str] = ["http://localhost:3000"]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        return v
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def assemble_allowed_hosts(cls, v: str | list[str]) -> list[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        return v
 
 
 @lru_cache
