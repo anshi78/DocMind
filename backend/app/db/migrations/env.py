@@ -41,10 +41,16 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
+    from urllib.parse import urlparse
+    db_url = config.get_main_option("sqlalchemy.url")
+    parsed = urlparse(db_url)
+    print(f"Connecting to database at {parsed.hostname}:{parsed.port}/{parsed.path.lstrip('/')} with user {parsed.username} using driver {parsed.scheme}", flush=True)
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={"timeout": 10, "command_timeout": 10},
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

@@ -35,7 +35,9 @@ class Base(DeclarativeBase):
             col.name: getattr(self, col.name)
             for col in self.__table__.columns
         }
-
+from urllib.parse import urlparse
+parsed = urlparse(settings.db_url)
+print(f"Database engine initialized for {parsed.hostname}:{parsed.port}/{parsed.path.lstrip('/')} with user {parsed.username} using driver {parsed.scheme}", flush=True)
 
 engine = create_async_engine(
     settings.db_url,
@@ -44,6 +46,7 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_recycle=3600,
     echo=settings.DEBUG,
+    connect_args={"timeout": 10, "command_timeout": 10},
 )
 
 AsyncSessionLocal = async_sessionmaker(
