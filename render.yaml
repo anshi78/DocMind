@@ -1,0 +1,103 @@
+# render.yaml (Render Blueprint Spec)
+# Deploys DocuMind full stack (FastAPI backend, Worker, Next.js frontend, Postgres, and Redis)
+
+services:
+  # 1. FastAPI Backend (Web Service)
+  - type: web
+    name: documind-backend
+    env: docker
+    dockerfilePath: Dockerfile.backend
+    context: .
+    plan: free
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: documind-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: documind-redis
+          property: connectionString
+      - key: DEFAULT_EMBEDDING_PROVIDER
+        value: gemini
+      - key: DEFAULT_LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false # Render will prompt you to enter this API key on setup
+      - key: CORS_ORIGINS
+        value: "*" # Update this with your frontend URL later for security
+      - key: ALLOWED_HOSTS
+        value: "*"
+
+  # 2. ARQ Background Ingestion Worker (Background Worker)
+  - type: worker
+    name: documind-worker
+    env: docker
+    dockerfilePath: Dockerfile.worker
+    context: .
+    plan: free
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: documind-backend
+          property: envVar:SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: documind-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: documind-redis
+          property: connectionString
+      - key: DEFAULT_EMBEDDING_PROVIDER
+        value: gemini
+      - key: DEFAULT_LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        fromService:
+          type: web
+          name: documind-backend
+          property: envVar:GEMINI_API_KEY
+
+  # 3. Next.js Frontend (Web Service)
+  - type: web
+    name: documind-frontend
+    env: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: documind-backend
+          property: url
+
+  # 4. Redis Cache & Queue (Key Value Store)
+  # Note: Render Redis is a paid service ($7/month minimum).
+  # If you want to use a free Redis instance, you can delete this service and use Upstash Redis (upstash.com) instead.
+  - type: redis
+    name: documind-redis
+    plan: starter
+    ipAllowList: [] # Restrict access to internal services only
+
+# 5. Managed PostgreSQL Database
+databases:
+  - name: documind-db
+    plan: free # Render Free tier expires in 90 days. Switch to Starter for production.
+    databaseName: documind
+    user: documind
