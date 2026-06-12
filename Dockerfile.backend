@@ -28,6 +28,8 @@ COPY backend/alembic.ini /app/alembic.ini
 
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
 
 EXPOSE 8000
 
