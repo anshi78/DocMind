@@ -32,32 +32,6 @@ services:
       - key: ALLOWED_HOSTS
         value: "*"
 
-  # 2. ARQ Background Ingestion Worker (Background Worker)
-  - type: worker
-    name: documind-worker
-    env: docker
-    dockerfilePath: Dockerfile.worker
-    plan: free
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: DEBUG
-        value: "false"
-      - key: SECRET_KEY
-        sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: documind-db
-          property: connectionString
-      - key: REDIS_URL
-        sync: false # Prompt for Upstash REDIS_URL on setup
-      - key: DEFAULT_EMBEDDING_PROVIDER
-        value: gemini
-      - key: DEFAULT_LLM_PROVIDER
-        value: gemini
-      - key: GEMINI_API_KEY
-        sync: false
-
   # 3. Next.js Frontend (Web Service)
   - type: web
     name: documind-frontend
