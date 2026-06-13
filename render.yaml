@@ -20,10 +20,7 @@ services:
           name: documind-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: documind-redis
-          property: connectionString
+        sync: false # Prompt for Upstash REDIS_URL on setup
       - key: DEFAULT_EMBEDDING_PROVIDER
         value: gemini
       - key: DEFAULT_LLM_PROVIDER
@@ -53,10 +50,7 @@ services:
           name: documind-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: documind-redis
-          property: connectionString
+        sync: false # Prompt for Upstash REDIS_URL on setup
       - key: DEFAULT_EMBEDDING_PROVIDER
         value: gemini
       - key: DEFAULT_LLM_PROVIDER
@@ -77,12 +71,7 @@ services:
         sync: false
 
   # 4. Redis Cache & Queue (Key Value Store)
-  # Note: Render Redis is a paid service ($7/month minimum).
-  # If you want to use a free Redis instance, you can delete this service and use Upstash Redis (upstash.com) instead.
-  - type: redis
-    name: documind-redis
-    plan: starter
-    ipAllowList: [] # Restrict access to internal services only
+  # We are using a free Upstash Redis instance instead of Render's paid Redis.
 
 # 5. Managed PostgreSQL Database
 databases:
